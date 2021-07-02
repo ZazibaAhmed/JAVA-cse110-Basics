@@ -1,0 +1,661 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>Complete Printf for Java Format String Specification</title>
+  <meta name="keywords" content="printf java printf sprintf fprintf format">
+  <meta name="description" content="Discusses syntax of Printf for Java format strings.">
+ </head>
+  <body>
+
+<h1>Complete Printf for Java Format String Specification</h1>
+
+<p>Lava's <code>printf</code> classes have been designed to offer Java 
+programmers the same text- and data-formatting features that C 
+programmers have enjoyed.  Printf allows the programmer to specify 
+textual representations of data using two parameters:</p>
+
+<ol>
+ <li>a <b>format string</b>, or "template," and
+ </li><li>an <b>argument list</b>, or a vector of data to be formatted according to the template.
+</li></ol>
+
+<p>In C, printf output is specified using a "tuple" of arbitrary length,</p>
+
+<blockquote>
+(format_string, data1, data2, data3, ...),
+</blockquote>
+
+<p>where the first parameter defines the format, and all additional parameters are the objects to be formatted.</p>
+
+<p>Unfortunately, Java does not directly support variable argument lists.  Instead, the Lava's printf classes simply accept a <em>pair</em> of arguments,</p>
+
+<blockquote>
+(format_string, argument_vector),
+</blockquote>
+
+<p>where the first parameter defines the format (as before), and the second parameter is a <em>vector</em> of elements, specified as an arbitrary length <code>Object</code> array.</p>
+
+<p>The format string is composed of <i>literal substrings</i> and <i>format specifiers</i>.
+  When output is produced, literal substrings are copied verbatim, but 
+format specifiers are replaced with string representations of elements 
+in the argument list.  The conversion of argument list elements into 
+strings is governed by parameters embedded in the format specifiers.  
+These parameters affect details such as</p>
+
+<ul>
+ <li>the number of digits beyond the decimal point (for real numbers),
+ </li><li>the left- or right-alignment of text within a field,
+ </li><li>whether to pad short numbers with spaces or zeros, etc.
+</li></ul>
+
+<p>It is the versatility of these parameters that make printf formatting so powerful.</p>
+
+<p>Lava's printf classes faithfully reproduce all of the formatting 
+features available in the C version of printf, but also provide 
+additional functionality not available in the C version.  Lava 
+extensions to standard C printf are indicated in <font color="darkblue"><b>blue font</b></font>.</p>
+
+<h2>1. format specifiers</h2>
+
+<p>The general syntax of a format specifier is</p>
+
+<blockquote>
+<code>%</code>[<var>flags</var>][<var>width</var>][<code>.</code><var>precision</var>][<var>argsize</var>]<var>typechar</var>
+</blockquote>
+
+<p>Format specifiers begin with a percent character (%) and terminate with a "type character," which indicates the type of data (<code>int</code>, <code>float</code>,
+ etc.) that will be converted the basic manner in which the data will be
+ represented (decimal, hexadecimal, etc.)  For example, the format 
+string</p>
+
+<blockquote>
+<tt>"I_can_lift_%f_tons."</tt>
+</blockquote>
+
+<p>indicates that the formatted output will be the concatenation of the substring <nobr>"<tt>I_can_lift_</tt>"</nobr>, a string representation of a <code>float</code> value, and the final substring <nobr>"<tt>_tons.</tt>"</nobr>  The corresponding argument vector for this format string would contain one number, which would be interpreted as the <code>float</code>.</p>
+
+<p>Depending on the conversion type, certain flags and formatting constraints can be inserted <em>between</em> the percent character and the type character.  For example, changing the "<tt>%f</tt>" to "<tt>%.3f</tt>" in the above format string indicates that the <code>float</code> should be formatted with a precision of three decimal places after the decimal point.</p>
+
+<p>The components of a format specifier are defined in the following sections.</p>
+
+<h3>1.1. conversion type character</h3>
+
+<p><var>typechar</var> is a single character identifying the conversion 
+type.  The supported conversion types are listed below, along with their
+ meanings, and the corresponding arguments expected in the argument 
+vector:</p>
+
+<table border="">
+ <tbody><tr bgcolor="#f0f0f0">
+  <th>type character</th>
+  <th>input</th>
+  <th>string result</th>
+ </tr>
+ <tr>
+  <td><code>%d</code></td>
+  <td>signed <code>int</code></td>
+  <td>signed decimal integer</td>
+ </tr>
+ <tr>
+  <td><code>%u</code></td>
+  <td>unsigned <code>int</code></td>
+  <td>unsigned decimal integer</td>
+ </tr>
+ <tr>
+  <td><code>%o</code></td>
+  <td>unsigned <code>int</code></td>
+  <td>unsigned octal integer</td>
+ </tr>
+ <tr>
+  <td><code>%x</code>, <code>%X</code></td>
+  <td>unsigned <code>int</code></td>
+  <td>unsigned hexadecimal integer, lowercase or uppercase</td>
+ </tr>
+ <tr>
+ 	<td><font color="darkblue"><code>%z[</code><var>n</var><code>]</code>, <code>%Z[</code><var>n</var><code>]</code></font></td>
+	<td><font color="darkblue">unsigned <code>int</code></font></td>
+	<td><font color="darkblue">unsigned integer base <var>n</var>, with <var>n</var> coded in decimal; include square brackets</font></td>
+ </tr>
+ <tr>
+  <td><code>%f</code></td>
+  <td><code>float</code></td>
+  <td>real number, standard notation</td>
+ </tr>
+ <tr>
+  <td><code>%e</code>, <code>%E</code></td>
+  <td><code>float</code></td>
+  <td>real number, scientific notation (lowercase or uppercase exponent marker)</td>
+ </tr>
+ <tr>
+  <td><code>%g</code>, <code>%G</code></td>
+  <td><code>float</code></td>
+  <td>same format as <code>%f</code> or <code>%e</code>, depending on the value.  Scientific notation is used only if the exponent is greater than the precision or less than -4.</td>
+ </tr>
+ <tr>
+  <td><code>%s</code></td>
+  <td><code>String</code></td>
+  <td>string</td>
+ </tr>
+ <tr>
+  <td><code>%c</code></td>
+  <td><code>char</code></td>
+  <td>character</td>
+ </tr>
+ <tr>
+  <td><code>%p</code></td>
+  <td><code>Object</code></td>
+  <td>object identity hash code (i.e., pointer value), in unsigned hexadecimal</td>
+ </tr>
+ <tr>
+  <th colspan="3" bgcolor="#f0f0f0">additional format specifiers that do not result in argument conversions
+ </th></tr>
+ <tr>
+  <td><font color="darkblue"><code>%\n</code></font></td>
+  <td><font color="darkblue"><i>(none)</i></font></td>
+  <td><font color="darkblue">platform-independent line separator (see §3)</font></td>
+ </tr>
+ <tr>
+  <td><code>%n</code></td>
+  <td><i>(null)</i></td>
+  <td>counts characters (see §4)</td>
+ </tr>
+</tbody></table>
+
+<p>The conversion type not only indicates the type of string generated from the input, but also the type of input required.</p>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example:</b> The format specifier "<code>%o</code>" means that an <code>int</code> argument will be converted to an unsigned octal string.</p>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<h3>1.2. input size modifier</h3>
+
+<p>Each conversion type character indicates that an argument of a 
+specific type is supplied.  Failure to supply the correct data type for a
+ format specifier results in an error, usually a <code>ClassCastException</code>.
+  It is possible, however, to change the data type required for certain 
+format specifiers.  This is done by preceding the type character with an
+ "input size modifier."</p>
+
+<p>The following table lists the allowed input size modifiers:</p>
+
+<center>
+
+<table border="">
+ <tbody><tr>
+  <th>default input size</th>
+  <th>input size modifier</th>
+  <th>actual input size used</th>
+ </tr>
+ <tr>
+  <td><code>int</code></td>
+  <td><i>(none)</i></td>
+  <td><code>int</code></td>
+ </tr>
+ <tr>
+  <td><code>int</code></td>
+  <td><code>h</code></td>
+  <td><code>short</code></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>int</code></font></td>
+  <td><font color="darkblue"><code>b</code></font></td>
+  <td><font color="darkblue"><code>byte</code></font></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>int</code></font></td>
+  <td><font color="darkblue"><code>B</code></font></td>
+  <td><font color="darkblue"><code>BigInteger</code></font></td>
+ </tr>
+ <tr>
+  <td><code>int</code></td>
+  <td><code>l</code></td>
+  <td><code>long</code></td>
+ </tr>
+ <tr>
+  <td><code>float</code></td>
+  <td><i>(none)</i></td>
+  <td><code>float</code></td>
+ </tr>
+ <tr>
+  <td><code>float</code></td>
+  <td><code>l</code></td>
+  <td><code>double</code></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>float</code></font></td>
+  <td><font color="darkblue"><code>B</code></font></td>
+  <td><font color="darkblue"><code>BigDecimal</code></font></td>
+ </tr>
+</tbody></table>
+
+</center>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example</b>: The format specifier "<code>%d</code>" menas that an <code>int</code> will be treated as a 32-bit signed decimal number.  However, the format specifier "<code>%hd</code>" means that a <code>short</code> will be converted instead.</p>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<font color="darkblue">
+
+<h4>1.2.1. BigInteger formatting</h4>
+
+<p>The <code>%u</code>, <code>%x</code>, and <code>%o</code> format specifiers typically represent <em>unsigned</em> integer conversions.  This is possible with primitive data types, such as <code>int</code>, because the sizes of the types are fixed and known, allowing every bit to be treated as a magnitude bit.  <code>BigInteger</code>s,
+ however, represent "infinitely long" bit patterns, so it is not 
+possible to treat them as unsigned values.  Because of this, the format 
+specifiers <code>%Bx</code>, <code>%Bo</code>, and <code>%Bu</code> will produce <em>signed</em> results.  (Note that it makes little sense to use <code>%Bu</code>, since it is the same as <code>%Bd</code>.)</p>
+
+</font>
+
+<h3>1.3. width specifier</h3>
+
+<p>An optional "width specifier," if present, indicates the field with, 
+or the minimum number of characters in the output that the formatted 
+argument will span.  If the string representation of the value does not 
+fill the minimum length, the field will be left-padded with spaces.  If 
+the converted value <em>exceeds</em> the minimum length, however, the converted result will not be truncated.</p>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example:</b> If the format specifier is "<code>%6d</code>", and the supplied <code>int</code> argument is 52, then the output will be "<tt>&nbsp;&nbsp;&nbsp;&nbsp;52</tt>" (four spaces on the left).</p>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<p>If no width is specified, then there is no minimum size for the 
+converted result.  The field will be only as large as necessary to 
+display the result.</p>
+
+<h4>1.3.1. variable width</h4>
+
+<p>It is possible to specify a <em>variable</em> field width, where one 
+of the arguments in the argument vector is used to determine the field's
+ width.  This is indicated in the format string by using an asterisk 
+character ('<code>*</code>') in place of the actual width value.  The corresponding value in the argument list must be an <code>int</code>, and must precede the actual argument being formatted.</p>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example:</b> If the format specifier is "<code>%*hd</code>", then there are two arguments in the argument list corresponding to this format specifier.  The first argument is an <code>int</code>, indicating the field width, and the second argument is converted as a signed <code>short</code>.</p>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<h3>1.4. precision specifier</h3>
+
+<p>An optional "precision specifier" may be included in a format 
+specifier to indicate the precision with which to convert the data.  The
+ meaning of the word "precision" depends on the type of conversion being
+ performed:</p>
+
+<table border="">
+ <tbody><tr>
+  <th>conversion type</th>
+  <th>meaning of "precision"</th>
+  <th>default value<br>(if omitted)</th>
+ </tr>
+ <tr>
+  <td><code>%d</code>, <code>%o</code>, <code>%u</code>, <code>%x</code>, <code>%X</code>, <font color="darkblue"><code>%z[</code><var>n</var><code>]</code></font>, <font color="darkblue"><code>%Z[</code><var>n</var><code>]</code></font> (integer conversions)</td>
+  <td>minimum number of digits.  The converted value will be prepended 
+with zeros if necessary.  Note that if the precision is 0 and the value 
+is zero, nothing will be printed, or the entire field will be nothing 
+but padding.</td>
+  <td>1</td>
+ </tr>
+ <tr>
+  <td><code>%f</code>, <code>%e</code>, <code>%E</code>, <code>%g</code>, <code>%G</code> (real conversions)</td>
+  <td>number of fractional digits after the decimal point.  The converted value will be rounded if necessary.</td>
+  <td>6</td>
+ </tr>
+ <tr>
+  <td><code>%s</code> (strings)</td>
+  <td>the maximum number of characters.  If the string is too long, it will be truncated.</td>
+  <td>infinity</td>
+ </tr>
+</tbody></table>
+
+<p>If no precision is specified, the default precision will be used.  
+Precision cannot be specified for conversion types other than those 
+listed above.</p>
+
+<h4>1.4.1. variable precision</h4>
+
+<p>Like the width field, the precision field may also be made <em>variable</em>
+ replacing the number with an asterisk.  The expected argument is an 
+int.  (See the section on "variable width" for details.)  If both 
+variable width and variable precision are used in the same format 
+specifier, the width argument appears first in the argument list.</p>
+
+<h3>1.5. flags</h3>
+
+<p>Flags are single characters that indicate exceptions to the 
+conversion type's default behavior.  A format specifier may have 
+multiple flags, but some flags are mutually exclusive.  Multiple flags 
+can appear in any order.  The following table lists the formatting flags
+ supported by Lava's printf classes:</p>
+
+<table border="">
+ <tbody><tr>
+  <th>flag</th>
+  <th>meaning</th>
+  <th>conversion types applicable</th>
+ </tr><tr>
+  <td>'<code>-</code>'</td>
+  <td>Result is left-aligned in the field.  This flag is meaningless if no mandatory field width is specified.</td>
+  <td rowspan="2"><code>%d</code>, <code>%u</code>, <code>%o</code>, <code>%x</code>, <code>%X</code>, <font color="darkblue"><code>%z[</code><var>n</var><code>]</code></font>, <font color="darkblue"><code>%Z[</code><var>n</var><code>]</code></font>, <code>%f</code>, <code>%e</code>, <code>%E</code>, <code>%g</code>, <code>%G</code>, <code>%s</code>, <code>%c</code>, <code>%p</code></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue">'<code>^</code>'</font></td>
+  <td><font color="darkblue">Result is centered in the field.  This flag is meaningless if no mandatory field width is specified.</font></td>
+ </tr>
+ <tr>
+  <td>'<code>+</code>'</td>
+  <td>Non-negative values begin with a plus character ('+').</td>
+  <td rowspan="2"><code>%d</code>, <code>%f</code></td>
+ </tr>
+ <tr>
+  <td>'<code>&nbsp;</code>'</td>
+  <td>Non-negative values begin with a space character (' ').  This flag is only useful for signed conversion results (%d and %f).</td>
+ </tr>
+ <tr>
+  <td>'<code>#</code>'</td>
+  <td colspan="2">
+
+   Argument is represented in an "alternate form."  This depends on the conversion type:
+
+   <table border="">
+    <tbody><tr>
+     <td><code>%o</code></td>
+     <td>Non-negative octal values are prepended with a zero ('0').</td>
+    </tr>
+    <tr>
+     <td><code>%x</code>, <code>%X</code></td>
+     <td>Hexadecimal values are prepended with the prefix "0x" or "0X".</td>
+    </tr>
+    <tr>
+     <td><code>%e</code>, <code>%E</code>, <code>%f</code></td>
+     <td>The integer portion of the result always ends with a decimal point ('.'), even if the fractional portion is zero.</td>
+    </tr>
+    <tr>
+     <td><code>%g</code>, <code>%G</code></td>
+     <td>The fractional portion always appears, even if it is zero.</td>
+    </tr>
+    <tr>
+     <td><font color="darkblue"><code>%c</code></font></td>
+     <td><font color="darkblue">If the character is special or 
+unprintable, it is output in an escaped form.  The output can be 
+surrounded by single quotes to form a syntactically valid Java character
+ literal.</font></td>
+    </tr>
+   </tbody></table>
+
+   There is no alternate form for <code>%s</code>, <code>%d</code>, <code>%u</code>, <font color="darkblue"><code>%z[</code><var>n</var><code>]</code></font>, and <font color="darkblue"><code>%Z[</code><var>n</var><code>]</code></font>.
+
+  </td>
+ </tr>
+</tbody></table>
+
+<h2>2. argument vectors</h2>
+
+<p>An argument vector is a list of data elements which will be converted
+ into strings and inserted in the printf output, according to formatting
+ criteria specified in the format string.  Each format specifier in the 
+format string requires a specific number and type of corresponding 
+arguments in the list.  Because Java does allow methods with 
+variable-length or variable-type argument lists, all of the arguments 
+must be encapsulated in a generic <code>Object</code> array, which is then passed as a single parameter.</p>
+
+<p>Unfortunately, <code>Object</code> arrays cannot hold primitive data types, such as <code>int</code> or <code>long</code>.  Thus, to include primitives in an argument list, <code>Object</code>
+ encapsulations must be used instead.  The following table lists the 
+input types required by the format specifiers, and the classes that 
+should be used to include them in the argument list:</p>
+
+<center>
+
+<table border="">
+ <tbody><tr>
+  <th>input type</th>
+  <th><font color="darkblue">recommended object type</font></th>
+  <th>required object type</th>
+  <th><font color="darkblue">method called to obtain input</font></th>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>byte</code></font></td>
+  <td><font color="darkblue"><code>java.lang.Byte</code></font></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>byteValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>short</code></td>
+  <td><code>java.lang.Short</code></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>shortValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>int</code></td>
+  <td><code>java.lang.Integer</code></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>intValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>long</code></td>
+  <td><code>java.lang.Long</code></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>longValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>float</code></td>
+  <td><code>java.lang.Float</code></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>floatValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>double</code></td>
+  <td><code>java.lang.Double</code></td>
+  <td><font color="darkblue"><code>java.lang.Number</code></font></td>
+  <td><font color="darkblue"><code>doubleValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><code>char</code></td>
+  <td><code>java.lang.Character</code></td>
+  <td><code>java.lang.Character</code></td>
+  <td><font color="darkblue"><code>charValue()</code></font></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>java.lang.BigInteger</code></font></td>
+  <td><font color="darkblue"><code>java.lang.BigInteger</code></font></td>
+  <td><font color="darkblue"><code>java.lang.BigInteger</code></font></td>
+  <td><font color="darkblue">n/a</font></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>java.lang.BigDecimal</code></font></td>
+  <td><font color="darkblue"><code>java.lang.BigDecimal</code></font></td>
+  <td><font color="darkblue"><code>java.lang.BigDecimal</code></font></td>
+  <td><font color="darkblue">n/a</font></td>
+ </tr>
+ <tr>
+  <td><font color="darkblue"><code>java.lang.String</code></font></td>
+  <td><font color="darkblue"><code>java.lang.String</code></font></td>
+  <td><font color="darkblue"><code>java.lang.Object</code></font></td>
+  <td><font color="darkblue"><code>toString()</code></font></td>
+ </tr>
+</tbody></table>
+
+</center>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example:</b> If the format specifier is "<code>%f</code>", then the corresponding argument in the <code>Object</code> array must be a <code>Float</code> object.</p>
+
+</td></tr></tbody></table>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+<p><b>Example:</b> If the format string is</p>
+
+<blockquote>
+"<code>My friend %s is %d years old.</code>"
+</blockquote>
+
+<p>then the corresponding argument list must consist of a <code>String</code> and an <code>int</code>.  Assuming that <code>name</code> is a <code>String</code> and <code>age</code> is an <code>int</code>, then the corresponding argument list might be created using the expression</p>
+
+<blockquote><code>
+new Object [] {name, new Integer (age)}
+</code></blockquote>
+
+<p>In this expression, the first element in the <code>Object</code> array is a <code>String</code>, which corresponds to the first format specifier, "<code>%s</code>".  The second element in the array is an <code>Integer</code>, which corresponds to the second format specifier, "<code>%d</code>".</p>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<font color="darkblue">
+
+<h3>2.1. abstract numerical types</h3>
+
+<p>Despite the recommendations given in the above section regarding 
+primitive type encapsulation, in reality it is legal to use any instance
+ of <code>java.lang.Number</code> wherever the input types</p>
+
+<blockquote>
+<code>int</code>, <code>long</code>, <code>short</code>, <code>byte</code>, <code>float</code>, or <code>double</code>
+</blockquote>
+
+<p>are expected.  This is because the formatting engine will correctly call the appropriate abstract method,</p>
+
+<blockquote><code>intValue()</code>, <code>longValue()</code>, <code>shortValue()</code>, <code>byteValue()</code>, <code>floatValue()</code>, or <code>doubleValue()</code>,
+</blockquote>
+
+<p>respectively, to obtain the necessary data.  This behavior provides a
+ measure of flexibility to be enjoyed by advanced programmers, including
+ the ability to invent and format one's own numerical data types.</p>
+
+<h3>2.2. automatic string conversion</h3>
+
+<p>Wherever an instance of <code>String</code> is needed in the argument list, it is actually safe to use <em>any</em> object type.  This is because the formatting engine will automatically call the object's <code>toString()</code> method (which, for a <code>String</code>
+ object, simply returns a self-reference).  This makes it easy to format
+ string representations of all types of objects.  It also makes it legal
+ to supply a <code>StringBuffer</code>, rather than a <code>String</code>, as the corresponding paramter for <code>%s</code>.</p>
+
+<h2>3. platform-independent line separators</h2>
+
+<p>In situations where Java software will be run on more than one 
+platform, it is wise to avoid using system-dependent control characters,
+ such as '\n'.  Lava's printf classes support the notion of a 
+"platform-independent line separator,"  represented in format strings by
+ the "<code>%\n</code>" format specifier.  Wherever <code>%\n</code> occurs in a format string, the printf classes will automatically insert the host system's native line separator.</p>
+
+<p>Note that if cross-platform compatibility is not an issue, and the 
+software will run primarily on Unix- and Windows-based hosts, using the 
+traditional newline character '<code>\n</code>' will probably produce acceptable results.</p>
+
+</font>
+
+<h2>4. character counting</h2>
+
+<p>A special format specifier not yet mentioned, "<code>%n</code>", does
+ not require any data from the argument list, nor does it produce any 
+output.  Instead, when this specifier appears in the format string, the 
+number of characters formatted up to the point where it appears is 
+computed, and the resulting <code>Integer</code> value is written into 
+the supplied argument vector.  Thus, when building the argument list for
+ a format string containing this specifier, an extra slot should be 
+reserved for the result.  This is the only instance in which the 
+argument vector will be modified by a printf call.</p>
+
+<blockquote>
+
+<table border="1"><tbody><tr><td bgcolor="#f0f0f0">
+
+ <p><b>Example:</b>  This program prints the string "<tt>My friend Sharky is 27 years old.</tt>"  It uses <code>%n</code> to obtain character positions so that it can underline the number 27.</p>
+<pre>// These are the parameters:
+String name = "Sharky";
+int age = 27;
+
+// This is the argument vector.  Observe that we're leaving
+// slots for the %n format specifier to place its results:
+Object[] args = new Object[] {name, null, new Integer (age), null};
+
+// Now we'll produce the first line of output:
+Stdio.printf ("My friend %s is %n%d%n years old.\n", args);
+
+// Next, we'll use the results from %n to form an underline string:
+int start = ((Integer) args [1]) . intValue ();
+int stop  = ((Integer) args [3]) . intValue ();
+String underline_string =
+	StringToolbox.repeat (' ', start       ) +
+	StringToolbox.repeat ('-', stop - start);
+
+// Lastly, we print the underline string.  Notice that, unlike the
+// above formatting operation, this time we form the argument vector
+// inline.  This is because we won't need to access its contents after
+// we've used it, as we did above:
+Stdio.printf ("%s\n", new Object[] {underline_string});
+</pre>
+ <p><b>Results:</b></p>
+<pre>My friend Sharky is 27 years old.
+                    --
+</pre>
+
+</td></tr></tbody></table>
+
+</blockquote>
+
+<font color="darkblue">
+
+<h2>5. precompiled format strings</h2>
+
+<p>Whenever printf argument formatting is performed, the format string 
+must be interpreted to determine what kind of output to produce.  For 
+one-shot deals, this is not a great concern.  In many situations, 
+however, printf formatting takes place within a loop, and it is a great 
+waste of time to interpret the same format string over and over again.</p>
+
+<p>To increase the efficiency of printf formatting within a loop, Lava 
+supports "precompiled format strings."  This makes it possible to 
+interpret a format string just once, and save the interpreted results 
+for use in multiple printf method calls.  Many programmers have found it
+ convenient to store the precompiled format strings as static members of
+ the classes in which they are used.  For more details, see the <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/lavadocs/lava/clib/stdio/PrintfFormatString.html"><code>PrintfFormatString</code></a> class.</p>
+
+</font>
+
+<h2>6. additional resources</h2>
+
+<p>The following classes and methods support the printf specification described in this document:</p>
+
+<ul>
+ <li>class <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/stdio/Printf.html">lava.clib.stdio.Printf</a>
+ </li><li>class <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/stdio/PrintfFormatString.html">lava.clib.stdio.PrintfFormatString</a>
+ </li><li>class <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/stdio/PrintfFormatException.html">lava.clib.stdio.PrintfFormatException</a>
+ </li><li>methods <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/Stdio.html">lava.clib.Stdio</a>.printf
+ </li><li>methods <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/Stdio.html">lava.clib.Stdio</a>.fprintf
+ </li><li>methods <a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/Stdio.html">lava.clib.Stdio</a>.sprintf
+</li></ul>
+
+<p>The following documents contain additional information about Printf for Java:</p>
+
+<menu>
+ <li><a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/stdio/doc-files/introduction.htm">Introduction to Printf for Java</a>
+ </li><li><a href="http://www.sharkysoft.com/archive/printf/docs/javadocs/lava/clib/stdio/doc-files/optimize.htm">Optimizing Printf for Java</a>
+</li></menu>
+
+<p><small>©1998-2001 Sharkysoft.  <a href="http://sharkysoft.com/contact/">Comments</a> on this article are welcome.</small></p>
+
+</body></html>

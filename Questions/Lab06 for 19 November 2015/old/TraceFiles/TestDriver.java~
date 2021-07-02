@@ -1,0 +1,10 @@
+public class TestDriver
+{
+    public static void main(String[] args)
+    {
+        Test meow = new Test();
+        meow.methodA();
+        meow.methodB();
+        
+    }
+}

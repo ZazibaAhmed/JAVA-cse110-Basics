@@ -1,0 +1,14 @@
+import java.util.Scanner;
+
+public class InputExample{  
+  public static void main(String args[]){   
+    Scanner haha = new Scanner ( System.in );
+    System.out.println("Please Enter an int");
+    int x; 
+     x = haha.nextInt();
+    
+    System.out.println(x);
+
+  }
+}
+
